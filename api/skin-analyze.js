@@ -1,4 +1,9 @@
-export const config = { api: { bodyParser: { sizeLimit: '20mb' } } };
+export const config = {
+  api: {
+    bodyParser: { sizeLimit: '20mb' },
+    maxDuration: 10
+  }
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,13 +13,13 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
-  // 检查 API Key 是否存在
   if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'API Key 未配置，请在 Vercel 环境变量中添加 ANTHROPIC_API_KEY' });
+    return res.status(500).json({ error: 'API Key 未配置' });
   }
-
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000); // 9秒超时
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -23,21 +28,26 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'claude-haiku-4-5-20251001', // 比 Sonnet 快3倍
+        max_tokens: 800,
         messages: req.body.messages
-      })
+      }),
+      signal: controller.signal
     });
 
+    clearTimeout(timeout);
     const data = await response.json();
-
-    // 把 Anthropic 的错误原样返回，方便排查
     if (!response.ok) {
-      return res.status(response.status).json({ error: data?.error?.message || JSON.stringify(data) });
+      return res.status(response.status).json({
+        error: data?.error?.message || JSON.stringify(data)
+      });
     }
-
     res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err.name === 'AbortError') {
+      res.status(504).json({ error: '分析超时，请压缩图片后重试' });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 }

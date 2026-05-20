@@ -1,217 +1,336 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>AI 皮肤分析</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
-  .container { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-  .header { text-align: center; margin-bottom: 28px; }
-  .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
-  .header p { font-size: 14px; color: #888; }
-  .zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-  .zone { background: #fff; border: 1.5px dashed #ddd; border-radius: 12px; padding: 14px 8px; text-align: center; cursor: pointer; transition: all .2s; position: relative; }
-  .zone:hover { border-color: #1D9E75; }
-  .zone.uploaded { border-color: #1D9E75; border-style: solid; }
-  .zone input { display: none; }
-  .zone-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-  .zone-status { font-size: 11px; color: #aaa; }
-  .zone.uploaded .zone-status { color: #1D9E75; }
-  .zone-preview { width: 100%; height: 64px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; }
-  .analyze-btn { width: 100%; padding: 14px; background: #1D9E75; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background .2s; display: none; }
-  .analyze-btn:hover { background: #0F6E56; }
-  .analyze-btn:disabled { background: #ccc; cursor: not-allowed; }
-  .loading { text-align: center; padding: 32px; background: #fff; border-radius: 12px; }
-  .spinner { width: 36px; height: 36px; border: 3px solid #eee; border-top-color: #1D9E75; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading p { font-size: 14px; color: #888; }
-  .result { background: #fff; border-radius: 16px; padding: 20px; }
-  .result-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
-  .score-circle { width: 60px; height: 60px; border-radius: 50%; background: #E1F5EE; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
-  .score-num { font-size: 20px; font-weight: 700; color: #0F6E56; line-height: 1; }
-  .score-label { font-size: 10px; color: #1D9E75; }
-  .summary { font-size: 14px; color: #444; line-height: 1.5; }
-  .zone-result { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
-  .zone-result:last-of-type { border-bottom: none; }
-  .zone-result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .zone-result-name { font-size: 13px; font-weight: 500; }
-  .prog-tag { font-size: 12px; padding: 2px 10px; border-radius: 20px; font-weight: 500; }
-  .tag-hydration { background: #E6F1FB; color: #185FA5; }
-  .tag-pore_tighten { background: #EEEDFE; color: #534AB7; }
-  .tag-dry_care { background: #FAEEDA; color: #854F0B; }
-  .tag-oil_control { background: #FAECE7; color: #993C1D; }
-  .zone-details { font-size: 12px; color: #888; }
-  .start-btn { width: 100%; padding: 14px; background: #1D9E75; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: 20px; transition: background .2s; }
-  .start-btn:hover { background: #0F6E56; }
-  .restart-btn { width: 100%; padding: 11px; background: transparent; color: #888; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; cursor: pointer; margin-top: 10px; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
-  .toast.show { opacity: 1; }
-  .section-title { font-size: 12px; color: #aaa; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin: 16px 0 8px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;background:#f7f7f7;color:#1a1a1a;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.container{max-width:480px;margin:0 auto;padding:24px 16px}
+.logo{text-align:center;padding:40px 0 32px}
+.logo h1{font-size:24px;font-weight:600;margin-bottom:8px}
+.logo p{font-size:14px;color:#888;line-height:1.6}
+.logo-icon{width:72px;height:72px;background:linear-gradient(135deg,#1D9E75,#0F6E56);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:36px}
+.big-btn{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:500;cursor:pointer;border:none;margin-bottom:12px;transition:all .2s}
+.btn-primary{background:#1D9E75;color:#fff}
+.btn-primary:hover{background:#0F6E56}
+.btn-secondary{background:#fff;color:#333;border:1px solid #e0e0e0}
+.tip-row{display:flex;gap:8px;margin-top:8px}
+.tip-item{flex:1;background:#fff;border-radius:12px;padding:12px 8px;text-align:center;font-size:12px;color:#666;line-height:1.5}
+.tip-item span{display:block;font-size:20px;margin-bottom:4px}
+.cam-wrap{position:relative;background:#000;border-radius:20px;overflow:hidden;aspect-ratio:3/4;width:100%;margin-bottom:16px}
+#video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#canvas{display:none}
+.face-guide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.face-oval{width:62%;aspect-ratio:3/4;border:2.5px solid rgba(29,158,117,.9);border-radius:50%;position:relative;box-shadow:0 0 0 2000px rgba(0,0,0,.25)}
+.zone-label{position:absolute;font-size:11px;color:#fff;background:rgba(29,158,117,.8);padding:3px 9px;border-radius:10px;white-space:nowrap;font-weight:500}
+.lbl-forehead{top:-14px;left:50%;transform:translateX(-50%)}
+.lbl-nose{top:44%;left:50%;transform:translateX(-50%)}
+.lbl-lcheek{top:52%;left:-58px}
+.lbl-rcheek{top:52%;right:-58px}
+.lbl-chin{bottom:-14px;left:50%;transform:translateX(-50%)}
+.cam-hint{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:13px;color:rgba(255,255,255,.95);text-shadow:0 1px 3px rgba(0,0,0,.6);font-weight:500}
+.shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:4px solid #1D9E75;margin:0 auto;cursor:pointer;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 4px 16px rgba(29,158,117,.3)}
+.shutter:active{transform:scale(.9)}
+.cam-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cam-side-btn{padding:8px 16px;border-radius:20px;font-size:13px;cursor:pointer;background:#fff;border:1px solid #ddd;color:#555}
+.preview-img{width:100%;border-radius:20px;margin-bottom:16px;display:block}
+.confirm-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.loading-page{text-align:center;padding:60px 16px}
+.spinner{width:52px;height:52px;border:3px solid #eee;border-top-color:#1D9E75;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-page h2{font-size:18px;font-weight:500;margin-bottom:8px}
+.loading-page p{font-size:14px;color:#888;line-height:1.6}
+.loading-steps{margin-top:28px;text-align:left;background:#fff;border-radius:16px;padding:16px}
+.l-step{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px;color:#ccc;transition:color .4s;border-bottom:1px solid #f5f5f5}
+.l-step:last-child{border:none;padding-bottom:0}
+.l-step.active{color:#1D9E75;font-weight:500}
+.l-step.done{color:#aaa}
+.l-dot{width:8px;height:8px;border-radius:50%;background:#e8e8e8;flex-shrink:0;transition:background .4s}
+.l-step.active .l-dot{background:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.2)}
+.l-step.done .l-dot{background:#aaa}
+.result-hero{background:linear-gradient(135deg,#1D9E75,#0F6E56);border-radius:20px;padding:24px;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:16px}
+.score-big{text-align:center;flex-shrink:0;width:64px}
+.score-big .num{font-size:44px;font-weight:700;line-height:1}
+.score-big .lbl{font-size:11px;opacity:.75;margin-top:3px}
+.hero-text h2{font-size:16px;font-weight:600;margin-bottom:5px}
+.hero-text p{font-size:13px;opacity:.88;line-height:1.55}
+.result-card{background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:12px}
+.result-card h3{font-size:11px;color:#bbb;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px}
+.zone-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f5f5f5}
+.zone-row:last-child{border:none;padding-bottom:2px}
+.zone-name{font-size:14px;font-weight:500;margin-bottom:3px}
+.zone-cond{font-size:12px;color:#999;line-height:1.4;max-width:195px}
+.prog-badge{font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500;flex-shrink:0;margin-top:2px}
+.b-hydration{background:#E6F1FB;color:#185FA5}
+.b-pore_tighten{background:#EEEDFE;color:#534AB7}
+.b-dry_care{background:#FAEEDA;color:#854F0B}
+.b-oil_control{background:#FAECE7;color:#993C1D}
+.start-btn{width:100%;padding:16px;background:#1D9E75;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:500;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 16px rgba(29,158,117,.3)}
+.start-btn:active{background:#0F6E56}
+.retry-btn{width:100%;padding:13px;background:transparent;color:#999;border:1px solid #e0e0e0;border-radius:14px;font-size:14px;cursor:pointer}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:11px 22px;border-radius:22px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
+
+<!-- 首页 -->
+<div id="page-home" class="page active">
 <div class="container">
-  <div class="header">
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
     <h1>AI 皮肤分析</h1>
-    <p>上传各区域皮肤照片，AI 匹配最适合的护肤程序</p>
+    <p>拍一张正脸照片<br>AI 自动识别5个区域，匹配专属护肤程序</p>
   </div>
-
-  <div id="upload-view">
-    <div class="zones" id="zones"></div>
-    <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">开始 AI 皮肤分析</button>
+  <button class="big-btn btn-primary" onclick="startCamera()">📷 &nbsp;现场拍摄分析</button>
+  <button class="big-btn btn-secondary" onclick="document.getElementById('upload-input').click()">🖼️ &nbsp;从相册上传照片</button>
+  <input type="file" id="upload-input" accept="image/*" style="display:none" onchange="handleUpload(this)">
+  <div class="tip-row">
+    <div class="tip-item"><span>☀️</span>光线充足</div>
+    <div class="tip-item"><span>🚫</span>素颜拍摄</div>
+    <div class="tip-item"><span>📏</span>正脸平视</div>
+    <div class="tip-item"><span>✨</span>关闭美颜</div>
   </div>
+</div>
+</div>
 
-  <div id="loading-view" style="display:none">
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>AI 正在分析你的皮肤状态…</p>
+<!-- 摄像头页 -->
+<div id="page-camera" class="page">
+<div class="container">
+  <div class="cam-bar">
+    <button class="cam-side-btn" onclick="goHome()">← 返回</button>
+    <span style="font-size:14px;font-weight:500">对准面部拍摄</span>
+    <button class="cam-side-btn" onclick="flipCamera()">🔄 翻转</button>
+  </div>
+  <div class="cam-wrap">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div class="face-guide">
+      <div class="face-oval">
+        <div class="zone-label lbl-forehead">额头</div>
+        <div class="zone-label lbl-nose">鼻翼</div>
+        <div class="zone-label lbl-lcheek">左脸颊</div>
+        <div class="zone-label lbl-rcheek">右脸颊</div>
+        <div class="zone-label lbl-chin">下巴</div>
+      </div>
+    </div>
+    <div class="cam-hint">将脸部对准绿色椭圆框内</div>
+  </div>
+  <div style="text-align:center">
+    <div class="shutter" onclick="capturePhoto()">📸</div>
+    <p style="font-size:13px;color:#aaa;margin-top:12px">点击按钮拍摄</p>
+  </div>
+</div>
+</div>
+
+<!-- 预览确认页 -->
+<div id="page-preview" class="page">
+<div class="container">
+  <p style="font-size:16px;font-weight:500;margin-bottom:16px">确认照片</p>
+  <img id="preview-img" class="preview-img" alt="皮肤照片预览">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">请确认面部清晰可见、光线充足、没有遮挡</p>
+  <div class="confirm-row">
+    <button class="big-btn btn-secondary" onclick="retakePhoto()" style="margin:0">重新拍摄</button>
+    <button class="big-btn btn-primary" onclick="startAnalysis()" style="margin:0">开始分析 →</button>
+  </div>
+</div>
+</div>
+
+<!-- 加载页 -->
+<div id="page-loading" class="page">
+<div class="container">
+  <div class="loading-page">
+    <div class="spinner"></div>
+    <h2>AI 正在分析皮肤状态</h2>
+    <p>识别额头、鼻翼、脸颊、下巴<br>匹配最适合的护肤程序</p>
+    <div class="loading-steps">
+      <div class="l-step active" id="ls1"><div class="l-dot"></div>上传照片中…</div>
+      <div class="l-step" id="ls2"><div class="l-dot"></div>识别面部5个区域…</div>
+      <div class="l-step" id="ls3"><div class="l-dot"></div>分析各区域皮肤状态…</div>
+      <div class="l-step" id="ls4"><div class="l-dot"></div>匹配专属护肤程序…</div>
     </div>
   </div>
+</div>
+</div>
 
-  <div id="result-view" style="display:none"></div>
+<!-- 结果页 -->
+<div id="page-result" class="page">
+<div class="container" id="result-container" style="padding-bottom:32px"></div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ⚠️ 把下面的网址替换成你的 Vercel 地址
 const PROXY_URL = 'https://skin-proxy-flax.vercel.app/api/skin-analyze';
-
-const ZONES = [
-  { id: 'forehead',   name: '额头',   key: 'zone_1_forehead' },
-  { id: 'nose',       name: '鼻翼',   key: 'zone_2_nose' },
-  { id: 'leftcheek',  name: '左脸颊', key: 'zone_3_left_cheek' },
-  { id: 'rightcheek', name: '右脸颊', key: 'zone_4_right_cheek' },
-  { id: 'chin',       name: '下巴',   key: 'zone_5_chin' },
-];
-
-const PROG_LABELS = {
-  hydration:    { label: '补水',     cls: 'tag-hydration' },
-  pore_tighten: { label: '收缩毛孔', cls: 'tag-pore_tighten' },
-  dry_care:     { label: '干燥护理', cls: 'tag-dry_care' },
-  oil_control:  { label: '出油护理', cls: 'tag-oil_control' },
+const PROG = {
+  hydration:    { label:'补水',     cls:'b-hydration' },
+  pore_tighten: { label:'收缩毛孔', cls:'b-pore_tighten' },
+  dry_care:     { label:'干燥护理', cls:'b-dry_care' },
+  oil_control:  { label:'出油护理', cls:'b-oil_control' },
 };
 
-const images = {};
+let stream = null;
+let facingMode = 'user';
+let capturedImage = null;
+let loadingTimer = null;
 
-// 渲染上传区域
-function renderZones() {
-  document.getElementById('zones').innerHTML = ZONES.map(z => `
-    <div class="zone ${images[z.id] ? 'uploaded' : ''}" id="zone-${z.id}" onclick="document.getElementById('file-${z.id}').click()">
-      ${images[z.id] ? `<img src="${images[z.id].dataUrl}" class="zone-preview">` : ''}
-      <div class="zone-name">${z.name}</div>
-      <div class="zone-status">${images[z.id] ? '✓ 已上传' : '点击上传'}</div>
-      <input type="file" id="file-${z.id}" accept="image/*" onchange="handleFile('${z.id}', this)">
-    </div>
-  `).join('');
-  const count = Object.keys(images).length;
-  const btn = document.getElementById('analyze-btn');
-  btn.style.display = count > 0 ? 'block' : 'none';
-  btn.textContent = `开始 AI 皮肤分析（已上传 ${count}/5）`;
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  window.scrollTo(0, 0);
 }
 
-function handleFile(id, input) {
-  const file = input.files[0];
-  if (!file) return;
+function goHome() { stopCamera(); showPage('home'); }
+
+async function startCamera() {
+  showPage('camera');
+  try {
+    if (stream) stopCamera();
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
+    });
+    document.getElementById('video').srcObject = stream;
+  } catch (e) {
+    showToast('无法访问摄像头，请使用相册上传');
+    showPage('home');
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function flipCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  startCamera();
+}
+
+function capturePhoto() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  if (facingMode === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(video, 0, 0);
+  capturedImage = canvas.toDataURL('image/jpeg', 0.85);
+  stopCamera();
+  document.getElementById('preview-img').src = capturedImage;
+  showPage('preview');
+}
+
+function handleUpload(input) {
+  const file = input.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    images[id] = { dataUrl: e.target.result, base64: e.target.result.split(',')[1], type: file.type };
-    renderZones();
+    capturedImage = e.target.result;
+    document.getElementById('preview-img').src = capturedImage;
+    showPage('preview');
   };
   reader.readAsDataURL(file);
 }
 
-async function runAnalysis() {
-  document.getElementById('upload-view').style.display = 'none';
-  document.getElementById('loading-view').style.display = 'block';
+function retakePhoto() { capturedImage = null; startCamera(); }
 
-  const contentParts = [];
-  ZONES.forEach((z, i) => {
-    if (!images[z.id]) return;
-    contentParts.push({ type: 'image', source: { type: 'base64', media_type: images[z.id].type, data: images[z.id].base64 } });
-    contentParts.push({ type: 'text', text: `图${i+1}为${z.name}区域` });
-  });
+async function startAnalysis() {
+  showPage('loading');
+  animateLoadingSteps();
 
-  contentParts.push({ type: 'text', text: `你是专业皮肤管理专家。分析以上皮肤图片，为每个分区选择最合适的护理程序。
-设备程序：hydration（补水，适合缺水/正常肤质），pore_tighten（收缩毛孔，适合毛孔粗大），dry_care（干燥护理，适合明显干燥/脱皮），oil_control（出油护理，适合油脂旺盛/痘痘）。
-严格输出JSON格式，不含其他文字：{"overall_score":85,"skin_summary":"一句话总结","zones":[{"zone":"额头","condition":"描述","program":"hydration"},{"zone":"鼻翼","condition":"描述","program":"pore_tighten"},{"zone":"左脸颊","condition":"描述","program":"dry_care"},{"zone":"右脸颊","condition":"描述","program":"dry_care"},{"zone":"下巴","condition":"描述","program":"oil_control"}],"device_commands":{"zone_1_forehead":"hydration","zone_2_nose":"pore_tighten","zone_3_left_cheek":"dry_care","zone_4_right_cheek":"dry_care","zone_5_chin":"oil_control"}}` });
+  const base64 = capturedImage.split(',')[1];
+  const mimeType = (capturedImage.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+
+  const prompt = `你是专业皮肤管理专家。仔细分析这张正面面部照片，识别并评估以下5个区域的皮肤状态：额头、鼻翼、左脸颊、右脸颊、下巴。
+
+设备支持的护肤程序：
+- hydration（补水）：适合缺水、轻度干燥、细纹、正常肤质
+- pore_tighten（收缩毛孔）：适合毛孔粗大、毛孔明显、油脂适中
+- dry_care（干燥护理）：适合明显干燥、脱皮、紧绷感
+- oil_control（出油护理）：适合油脂旺盛、痘痘、T区发亮
+
+请严格输出以下JSON格式，不含任何其他文字：
+{"overall_score":85,"skin_type":"混合肤质","skin_summary":"一句话总结皮肤整体状态","zones":[{"zone":"额头","condition":"该区域皮肤具体描述","program":"hydration"},{"zone":"鼻翼","condition":"该区域皮肤具体描述","program":"pore_tighten"},{"zone":"左脸颊","condition":"该区域皮肤具体描述","program":"dry_care"},{"zone":"右脸颊","condition":"该区域皮肤具体描述","program":"dry_care"},{"zone":"下巴","condition":"该区域皮肤具体描述","program":"oil_control"}],"device_commands":{"zone_1_forehead":"hydration","zone_2_nose":"pore_tighten","zone_3_left_cheek":"dry_care","zone_4_right_cheek":"dry_care","zone_5_chin":"oil_control"},"recommendations":["护肤建议1","护肤建议2","护肤建议3"]}`;
 
   try {
     const resp = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: contentParts }] })
+      body: JSON.stringify({ messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+        { type: 'text', text: prompt }
+      ]}]})
     });
     const data = await resp.json();
     const raw = (data.content || []).map(b => b.text || '').join('');
     const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    clearInterval(loadingTimer);
     showResult(result);
   } catch (e) {
-    document.getElementById('loading-view').style.display = 'none';
-    document.getElementById('upload-view').style.display = 'block';
-    showToast('分析失败，请重试：' + e.message);
+    clearInterval(loadingTimer);
+    showPage('preview');
+    showToast('分析失败，请检查网络后重试');
   }
 }
 
+function animateLoadingSteps() {
+  const ids = ['ls1','ls2','ls3','ls4'];
+  ids.forEach(s => { document.getElementById(s).className = 'l-step'; });
+  document.getElementById(ids[0]).classList.add('active');
+  let i = 0;
+  loadingTimer = setInterval(() => {
+    if (i < ids.length - 1) {
+      document.getElementById(ids[i]).classList.replace('active','done');
+      i++;
+      document.getElementById(ids[i]).classList.add('active');
+    }
+  }, 1400);
+}
+
 function showResult(r) {
-  document.getElementById('loading-view').style.display = 'none';
   const zoneRows = (r.zones || []).map(z => {
-    const p = PROG_LABELS[z.program] || { label: z.program, cls: '' };
-    return `<div class="zone-result">
-      <div class="zone-result-header">
-        <span class="zone-result-name">${z.zone}</span>
-        <span class="prog-tag ${p.cls}">${p.label}</span>
-      </div>
-      <div class="zone-details">${z.condition || ''}</div>
+    const p = PROG[z.program] || { label: z.program, cls: '' };
+    return `<div class="zone-row">
+      <div><div class="zone-name">${z.zone}</div><div class="zone-cond">${z.condition||''}</div></div>
+      <div class="prog-badge ${p.cls}">${p.label}</div>
     </div>`;
   }).join('');
 
-  document.getElementById('result-view').innerHTML = `
-    <div class="result">
-      <div class="result-header">
-        <div class="score-circle">
-          <span class="score-num">${r.overall_score || '--'}</span>
-          <span class="score-label">评分</span>
-        </div>
-        <div class="summary">${r.skin_summary || ''}</div>
-      </div>
-      <div class="section-title">各区域分析</div>
-      ${zoneRows}
-      <button class="start-btn" onclick="startDevice(${JSON.stringify(r.device_commands || {})})">
-        一键启动护肤体验
-      </button>
-      <button class="restart-btn" onclick="restart()">重新分析</button>
+  const recs = (r.recommendations || []).map(rec =>
+    `<div style="display:flex;gap:8px;padding:9px 0;border-bottom:1px solid #f5f5f5;font-size:13px;color:#555;line-height:1.5">
+      <span style="color:#1D9E75;flex-shrink:0;margin-top:1px">✦</span><span>${rec}</span>
+    </div>`
+  ).join('');
+
+  document.getElementById('result-container').innerHTML = `
+    <div class="result-hero">
+      <div class="score-big"><div class="num">${r.overall_score||'--'}</div><div class="lbl">皮肤评分</div></div>
+      <div class="hero-text"><h2>${r.skin_type||'分析完成'}</h2><p>${r.skin_summary||''}</p></div>
     </div>
+    <div class="result-card"><h3>各区域分析</h3>${zoneRows}</div>
+    ${recs ? `<div class="result-card"><h3>护肤建议</h3>${recs}</div>` : ''}
+    <button class="start-btn" onclick="startDevice(${JSON.stringify(r.device_commands||{})})">一键启动护肤体验 →</button>
+    <button class="retry-btn" onclick="restart()">重新分析</button>
   `;
-  document.getElementById('result-view').style.display = 'block';
+  showPage('result');
 }
 
 function startDevice(commands) {
   fetch('http://skindevice.local:8080/start', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(commands)
-  }).then(() => showToast('设备已启动！'))
+  }).then(() => showToast('✓ 设备已启动'))
     .catch(() => showToast('请确认设备已开机并连接同一 WiFi'));
 }
 
-function restart() {
-  Object.keys(images).forEach(k => delete images[k]);
-  document.getElementById('result-view').style.display = 'none';
-  document.getElementById('upload-view').style.display = 'block';
-  renderZones();
-}
+function restart() { capturedImage = null; showPage('home'); }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-
-renderZones();
 </script>
 </body>
 </html>

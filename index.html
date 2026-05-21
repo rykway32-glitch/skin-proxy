@@ -1,195 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI 皮肤分析</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;background:#f5f5f5;color:#1a1a1a;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.wrap{max-width:460px;margin:0 auto;padding:20px 16px}
+
+/* 首页 */
+.hero{text-align:center;padding:36px 0 28px}
+.hero-icon{width:68px;height:68px;background:linear-gradient(135deg,#1D9E75,#0a7a5a);border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:34px;box-shadow:0 8px 24px rgba(29,158,117,.25)}
+.hero h1{font-size:22px;font-weight:600;margin-bottom:6px;color:#111}
+.hero p{font-size:14px;color:#999;line-height:1.6}
+.btn{width:100%;padding:15px;border-radius:14px;font-size:15px;font-weight:500;cursor:pointer;border:none;margin-bottom:10px;transition:all .18s;font-family:inherit}
+.btn-green{background:#1D9E75;color:#fff;box-shadow:0 4px 16px rgba(29,158,117,.3)}
+.btn-green:active{background:#0a7a5a;transform:scale(.98)}
+.btn-white{background:#fff;color:#333;border:1px solid #e5e5e5}
+.btn-white:active{background:#f5f5f5}
+.tips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.tip{background:#fff;border-radius:12px;padding:10px 6px;text-align:center;font-size:11px;color:#777;line-height:1.5}
+.tip em{display:block;font-size:19px;font-style:normal;margin-bottom:3px}
+
+/* 摄像头页 */
+.cam-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.icon-btn{padding:7px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:#fff;border:1px solid #ddd;color:#555;font-family:inherit}
+.cam-box{position:relative;background:#111;border-radius:18px;overflow:hidden;width:100%;height:400px;margin-bottom:14px}
+#video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+#canvas{display:none}
+.oval-guide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.oval{width:58%;height:78%;border:2.5px solid rgba(29,158,117,.85);border-radius:50%;position:relative;box-shadow:0 0 0 9999px rgba(0,0,0,.3)}
+.zlabel{position:absolute;font-size:10px;color:#fff;background:rgba(29,158,117,.85);padding:2px 8px;border-radius:10px;white-space:nowrap;font-weight:500}
+.zt{top:-13px;left:50%;transform:translateX(-50%)}
+.zn{top:44%;left:50%;transform:translateX(-50%)}
+.zlc{top:50%;left:-52px}
+.zrc{top:50%;right:-52px}
+.zc{bottom:-13px;left:50%;transform:translateX(-50%)}
+.cam-hint{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.shutter-wrap{text-align:center;margin-top:4px}
+.shutter{width:68px;height:68px;border-radius:50%;background:#fff;border:4px solid #1D9E75;margin:0 auto;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 18px rgba(29,158,117,.3);transition:transform .12s}
+.shutter:active{transform:scale(.88)}
+
+/* 预览页 */
+.preview-img{width:100%;border-radius:18px;margin-bottom:14px;display:block;max-height:500px;object-fit:cover}
+.two-btn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* 加载页 */
+.loading-box{text-align:center;padding:56px 0}
+.spinner{width:50px;height:50px;border:3px solid #eee;border-top-color:#1D9E75;border-radius:50%;animation:spin .75s linear infinite;margin:0 auto 18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box h2{font-size:17px;font-weight:500;margin-bottom:6px}
+.loading-box p{font-size:13px;color:#999;line-height:1.6}
+.steps-box{background:#fff;border-radius:14px;padding:14px 16px;margin-top:22px;text-align:left}
+.ls{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;color:#ccc;border-bottom:1px solid #f5f5f5;transition:color .35s}
+.ls:last-child{border:none}
+.ls.on{color:#1D9E75;font-weight:500}
+.ls.done{color:#aaa}
+.ldot{width:7px;height:7px;border-radius:50%;background:#e5e5e5;flex-shrink:0;transition:background .35s}
+.ls.on .ldot{background:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,.18)}
+.ls.done .ldot{background:#bbb}
+
+/* 结果页 */
+.result-wrap{padding-bottom:28px}
+.score-card{background:linear-gradient(135deg,#1D9E75,#0a7a5a);border-radius:18px;padding:22px 20px;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.score-num{text-align:center;flex-shrink:0;width:62px}
+.score-num .n{font-size:42px;font-weight:700;line-height:1}
+.score-num .l{font-size:11px;opacity:.75;margin-top:2px}
+.score-info h2{font-size:15px;font-weight:600;margin-bottom:4px}
+.score-info p{font-size:13px;opacity:.85;line-height:1.5}
+.white-card{background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:10px}
+.card-title{font-size:11px;color:#bbb;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:12px}
+.zone-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.zone-row:last-child{border:none;padding-bottom:0}
+.zone-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.zone-cond{font-size:12px;color:#999;line-height:1.4;max-width:190px}
+.prog{font-size:12px;padding:3px 11px;border-radius:20px;font-weight:500;flex-shrink:0;margin-top:2px}
+.p-hy{background:#E6F1FB;color:#185FA5}
+.p-po{background:#EEEDFE;color:#534AB7}
+.p-dr{background:#FAEEDA;color:#854F0B}
+.p-oi{background:#FAECE7;color:#993C1D}
+.rec-row{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px;color:#444;line-height:1.5}
+.rec-row:last-child{border:none}
+.rec-dot{color:#1D9E75;flex-shrink:0;margin-top:1px;font-size:14px}
+.start-btn{width:100%;padding:15px;background:#1D9E75;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 16px rgba(29,158,117,.28);font-family:inherit}
+.start-btn:active{background:#0a7a5a}
+.retry-btn{width:100%;padding:12px;background:transparent;color:#aaa;border:1px solid #e0e0e0;border-radius:14px;font-size:14px;cursor:pointer;font-family:inherit}
+
+/* Toast */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.92);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;opacity:0;transition:opacity .28s;pointer-events:none;white-space:nowrap;z-index:9999;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="pg-home" class="page active">
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-icon">🔬</div>
+    <h1>AI 皮肤分析</h1>
+    <p>拍一张正脸照片<br>AI 自动识别5个区域，匹配专属护肤程序</p>
+  </div>
+  <button class="btn btn-green" onclick="openCamera()">📷 &nbsp;现场拍摄分析</button>
+  <button class="btn btn-white" onclick="document.getElementById('file-input').click()">🖼️ &nbsp;从相册上传照片</button>
+  <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none" onchange="handleUpload(this)">
+  <div class="tips">
+    <div class="tip"><em>☀️</em>光线充足</div>
+    <div class="tip"><em>🚫</em>素颜拍摄</div>
+    <div class="tip"><em>📏</em>正脸平视</div>
+    <div class="tip"><em>✨</em>关闭美颜</div>
+  </div>
+</div>
+</div>
+
+<!-- 摄像头页 -->
+<div id="pg-camera" class="page">
+<div class="wrap">
+  <div class="cam-top">
+    <button class="icon-btn" onclick="closeCamera()">← 返回</button>
+    <span style="font-size:14px;font-weight:500">对准面部拍摄</span>
+    <button class="icon-btn" onclick="flipCam()">🔄 翻转</button>
+  </div>
+  <div class="cam-box">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <div class="oval-guide">
+      <div class="oval">
+        <div class="zlabel zt">额头</div>
+        <div class="zlabel zn">鼻翼</div>
+        <div class="zlabel zlc">左脸颊</div>
+        <div class="zlabel zrc">右脸颊</div>
+        <div class="zlabel zc">下巴</div>
+      </div>
+    </div>
+    <div class="cam-hint">将脸部对准绿色椭圆框</div>
+  </div>
+  <div class="shutter-wrap">
+    <div class="shutter" onclick="takePhoto()">📸</div>
+    <p style="font-size:12px;color:#aaa;margin-top:10px;text-align:center">点击拍摄</p>
+  </div>
+</div>
+</div>
+
+<!-- 预览页 -->
+<div id="pg-preview" class="page">
+<div class="wrap">
+  <p style="font-size:16px;font-weight:500;margin-bottom:14px">确认照片</p>
+  <img id="preview-img" class="preview-img" alt="皮肤照片预览">
+  <p style="font-size:13px;color:#999;margin-bottom:14px">请确认面部清晰可见、光线充足、无遮挡</p>
+  <div class="two-btn">
+    <button class="btn btn-white" onclick="retake()" style="margin:0">重新拍摄</button>
+    <button class="btn btn-green" onclick="doAnalysis()" style="margin:0">开始分析 →</button>
+  </div>
+</div>
+</div>
+
+<!-- 加载页 -->
+<div id="pg-loading" class="page">
+<div class="wrap">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <h2>AI 正在分析皮肤状态</h2>
+    <p>识别额头、鼻翼、脸颊、下巴<br>匹配最适合的护肤程序</p>
+    <div class="steps-box">
+      <div class="ls on" id="ls1"><div class="ldot"></div>上传照片中…</div>
+      <div class="ls" id="ls2"><div class="ldot"></div>识别面部5个区域…</div>
+      <div class="ls" id="ls3"><div class="ldot"></div>分析各区域皮肤状态…</div>
+      <div class="ls" id="ls4"><div class="ldot"></div>匹配专属护肤程序…</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 结果页 -->
+<div id="pg-result" class="page">
+<div class="wrap">
+  <div class="result-wrap" id="result-box"></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  // 1. 压缩图片函数
-  async function compressImage(dataUrl) {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxW = 800;
-        const ratio = Math.min(maxW / img.width, maxW / img.height, 1);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.6).split(',')[1]);
-      };
-      img.src = dataUrl;
+// ⚠️ 替换成你自己的 Vercel 网址
+const PROXY = 'https://skin-proxy-flax.vercel.app/api/skin-analyze';
+
+const PROG_MAP = {
+  hydration:    { label:'补水',     cls:'p-hy' },
+  pore_tighten: { label:'收缩毛孔', cls:'p-po' },
+  dry_care:     { label:'干燥护理', cls:'p-dr' },
+  oil_control:  { label:'出油护理', cls:'p-oi' },
+};
+
+let stream = null;
+let facing = 'user';
+let photo = null;
+let loadTimer = null;
+
+// ── 页面切换 ──
+function go(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── 摄像头 ──
+async function openCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('当前浏览器不支持摄像头，请使用相册上传');
+    return;
+  }
+  go('camera');
+  await startStream();
+}
+
+async function startStream() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false
     });
+    const v = document.getElementById('video');
+    v.srcObject = stream;
+    await v.play();
+  } catch (e) {
+    toast('摄像头启动失败：' + e.message);
+    go('home');
   }
+}
 
-  // 2. 基础配置与变量
-  const PROXY_URL = 'https://skin-proxy-flax.vercel.app/api/skin-analyze';
-  const PROG = {
-    hydration: { label: '补水', cls: 'b-hydration' },
-    pore_tighten: { label: '收缩毛孔', cls: 'b-pore_tighten' },
-    dry_care: { label: '干燥护理', cls: 'b-dry_care' },
-    oil_control: { label: '出油护理', cls: 'b-oil_control' },
-  };
+function closeCamera() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  go('home');
+}
 
-  let stream = null;
-  let facingMode = 'user';
-  let capturedImage = null;
-  let loadingTimer = null;
+function flipCam() {
+  facing = facing === 'user' ? 'environment' : 'user';
+  startStream();
+}
 
-  // 3. 页面路由
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const target = document.getElementById(id);
-    if (target) target.classList.add('active');
-  }
+function takePhoto() {
+  const v = document.getElementById('video');
+  const c = document.getElementById('canvas');
+  c.width = v.videoWidth || 640;
+  c.height = v.videoHeight || 480;
+  const ctx = c.getContext('2d');
+  if (facing === 'user') { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(v, 0, 0);
+  photo = c.toDataURL('image/jpeg', 0.9);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  showPreview();
+}
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-  }
+// ── 上传 ──
+function handleUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { photo = e.target.result; showPreview(); };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
 
-  // 4. 摄像头控制
-  async function startCamera() {
-    try {
-      if (stream) stopCamera();
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
-      document.getElementById('video').srcObject = stream;
-    } catch (err) {
-      console.error(err);
-      showToast('无法打开摄像头，请检查权限');
-    }
-  }
+function showPreview() {
+  document.getElementById('preview-img').src = photo;
+  go('preview');
+}
 
-  function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
-    }
-  }
+function retake() {
+  photo = null;
+  go('home');
+}
 
-  function toggleCamera() {
-    facingMode = facingMode === 'user' ? 'environment' : 'user';
-    startCamera();
-  }
+// ── 压缩图片 ──
+function compressImage(dataUrl) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 720;
+      const r = Math.min(MAX / img.width, MAX / img.height, 1);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r);
+      c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.55).split(',')[1]);
+    };
+    img.onerror = () => resolve(dataUrl.split(',')[1]);
+    img.src = dataUrl;
+  });
+}
 
-  function capturePhoto() {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    if (!stream) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    capturedImage = canvas.toDataURL('image/jpeg');
-    document.getElementById('preview-img').src = capturedImage;
-    stopCamera();
-    showPage('page-preview');
-  }
+// ── 分析 ──
+async function doAnalysis() {
+  go('loading');
+  animSteps();
 
-  function retakePhoto() {
-    showPage('page-capture');
-    startCamera();
-  }
+  const mimeType = (photo.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+  const base64 = await compressImage(photo);
 
-  // 5. AI 分析逻辑
-  function startAnalysis() {
-    if (!capturedImage) return;
-    showPage('page-loading');
-    let step = 1;
-    document.querySelectorAll('.l-step').forEach(s => s.classList.remove('active', 'done'));
-    document.getElementById('ls1').classList.add('active');
+  const prompt = `你是专业皮肤管理专家。仔细分析这张正面面部照片，识别并评估5个区域的皮肤状态：额头、鼻翼、左脸颊、右脸颊、下巴。
 
-    loadingTimer = setInterval(() => {
-      document.getElementById(`ls${step}`).classList.remove('active');
-      document.getElementById(`ls${step}`).classList.add('done');
-      step++;
-      if (step <= 4) {
-        document.getElementById(`ls${step}`).classList.add('active');
-      } else {
-        clearInterval(loadingTimer);
-      }
-    }, 1500);
+设备护肤程序（只能选以下四种）：
+- hydration（补水）：缺水、细纹、正常偏干
+- pore_tighten（收缩毛孔）：毛孔粗大、毛孔明显
+- dry_care（干燥护理）：明显干燥、脱皮、紧绷
+- oil_control（出油护理）：油脂旺盛、痘痘、T区发亮
 
-    compressImage(capturedImage).then(base64Str => {
-      return fetch(PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Str })
-      });
-    })
-    .then(res => {
-      if (!res.ok) throw new Error('分析失败');
-      return res.json();
-    })
-    .then(data => {
-      clearInterval(loadingTimer);
-      renderResult(data);
-      showPage('page-result');
-    })
-    .catch(err => {
-      clearInterval(loadingTimer);
-      console.error(err);
-      showToast('分析出错，请重试');
-      showPage('page-capture');
-      startCamera();
+只输出JSON，不要任何其他文字：
+{"overall_score":85,"skin_type":"混合肤质","skin_summary":"一句话总结","zones":[{"zone":"额头","condition":"描述","program":"hydration"},{"zone":"鼻翼","condition":"描述","program":"pore_tighten"},{"zone":"左脸颊","condition":"描述","program":"dry_care"},{"zone":"右脸颊","condition":"描述","program":"dry_care"},{"zone":"下巴","condition":"描述","program":"oil_control"}],"device_commands":{"zone_1_forehead":"hydration","zone_2_nose":"pore_tighten","zone_3_left_cheek":"dry_care","zone_4_right_cheek":"dry_care","zone_5_chin":"oil_control"},"recommendations":["建议1","建议2","建议3"]}`;
+
+  try {
+    const resp = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + base64, detail: 'low' } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
     });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const raw = (data.content || []).map(b => b.text || '').join('') || data.choices?.[0]?.message?.content || '';
+    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    clearInterval(loadTimer);
+    showResult(result);
+  } catch (e) {
+    clearInterval(loadTimer);
+    go('preview');
+    toast('分析失败：' + e.message);
   }
+}
 
-  // 6. 结果渲染
-  function renderResult(data) {
-    const container = document.getElementById('result-container');
-    let html = `
-      <div class="result-header">
-        <div class="score-circle">
-          <div class="score-num">${data.score || 85}</div>
-          <div class="score-label">综合评分</div>
-        </div>
-        <h2 style="margin-top:16px;font-size:20px">${data.skin_type || '混合性肌肤'}</h2>
-      </div>
-      <div class="report-card">
-        <h3>📊 区域状态分析</h3>
-    `;
-    
-    if (data.zones && Array.isArray(data.zones)) {
-      data.zones.forEach(z => {
-        html += `
-          <div class="zone-item">
-            <span class="zone-name">${z.zone}</span>
-            <span class="zone-status">${z.status}</span>
-          </div>
-        `;
-      });
-    } else {
-      html += '<p style="color:#888;font-size:14px">暂无区域详细数据</p>';
+function animSteps() {
+  const ids = ['ls1','ls2','ls3','ls4'];
+  ids.forEach(id => document.getElementById(id).className = 'ls');
+  document.getElementById(ids[0]).classList.add('on');
+  let i = 0;
+  loadTimer = setInterval(() => {
+    if (i < ids.length - 1) {
+      document.getElementById(ids[i]).className = 'ls done';
+      i++;
+      document.getElementById(ids[i]).classList.add('on');
     }
-    
-    html += `
-      </div>
-      <div class="report-card">
-        <h3>💡 专属护肤程序推荐</h3>
-    `;
-    
-    if (data.programs && Array.isArray(data.programs)) {
-      data.programs.forEach(p => {
-        const meta = PROG[p.id] || { label: p.id, cls: 'b-hydration' };
-        html += `
-          <div class="prog-item ${meta.cls}">
-            <div class="prog-title">${meta.label}</div>
-            <div class="prog-desc">${p.desc}</div>
-          </div>
-        `;
-      });
-    } else {
-      html += '<p style="color:#888;font-size:14px">暂无推荐程序</p>';
-    }
-    
-    html += `
-      </div>
-      <button class="big-btn btn-primary" onclick="retakePhoto()" style="margin-top:24px">重新测试</button>
-    `;
-    container.innerHTML = html;
-  }
+  }, 1500);
+}
 
-  // 初始化启动
-  window.onload = () => {
-    showPage('page-capture');
-    startCamera();
-  };
+// ── 显示结果 ──
+function showResult(r) {
+  const zones = (r.zones || []).map(z => {
+    const p = PROG_MAP[z.program] || { label: z.program, cls: '' };
+    return `<div class="zone-row">
+      <div><div class="zone-name">${z.zone}</div><div class="zone-cond">${z.condition || ''}</div></div>
+      <div class="prog ${p.cls}">${p.label}</div>
+    </div>`;
+  }).join('');
+
+  const recs = (r.recommendations || []).map(rec =>
+    `<div class="rec-row"><span class="rec-dot">✦</span><span>${rec}</span></div>`
+  ).join('');
+
+  document.getElementById('result-box').innerHTML = `
+    <div class="score-card">
+      <div class="score-num"><div class="n">${r.overall_score || '--'}</div><div class="l">皮肤评分</div></div>
+      <div class="score-info"><h2>${r.skin_type || '分析完成'}</h2><p>${r.skin_summary || ''}</p></div>
+    </div>
+    <div class="white-card">
+      <div class="card-title">各区域分析结果</div>
+      ${zones}
+    </div>
+    ${recs ? `<div class="white-card"><div class="card-title">护肤建议</div>${recs}</div>` : ''}
+    <button class="start-btn" onclick="startDevice(${JSON.stringify(r.device_commands || {})})">
+      一键启动护肤体验 →
+    </button>
+    <button class="retry-btn" onclick="restart()">重新分析</button>
+  `;
+  go('result');
+}
+
+// ── 触发设备 ──
+function startDevice(cmds) {
+  fetch('http://skindevice.local:8080/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cmds)
+  }).then(() => toast('✓ 设备已启动'))
+    .catch(() => toast('请确认设备已开机并连接同一 WiFi'));
+}
+
+function restart() { photo = null; go('home'); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+}
 </script>
+</body>
+</html>
